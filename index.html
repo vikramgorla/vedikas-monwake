@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Moonwake</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="game-wrap" aria-label="Moonwake arcade game">
+        <canvas id="game" width="960" height="640"></canvas>
+        <div class="hud" aria-hidden="true">
+          <div>
+            <span>Score</span>
+            <strong id="score">0</strong>
+          </div>
+          <div>
+            <span>Run Coins</span>
+            <strong id="coins">0</strong>
+          </div>
+          <div>
+            <span>Total Coins</span>
+            <strong id="bank">0</strong>
+          </div>
+          <div>
+            <span>Level</span>
+            <strong id="level">1</strong>
+          </div>
+          <div>
+            <span>Combo</span>
+            <strong id="combo">x1</strong>
+          </div>
+          <div>
+            <span>Focus</span>
+            <strong id="focus">100%</strong>
+          </div>
+        </div>
+        <div id="overlay" class="overlay">
+          <h1>Moonwake</h1>
+          <p>Catch moon pearls, dodge static shards, and ride the neon tide.</p>
+          <button id="startButton" type="button">Start</button>
+        </div>
+      </section>
+
+      <aside class="panel" aria-label="Game controls and status">
+        <div>
+          <p class="eyebrow">Arcade reset</p>
+          <h2>Keep the comet awake.</h2>
+          <p>
+            Move fast, chain pearl catches, and grab tide crystals before the
+            current fades.
+          </p>
+        </div>
+        <dl class="stats">
+          <div>
+            <dt>Move</dt>
+            <dd>Touch / drag / mouse</dd>
+          </div>
+          <div>
+            <dt>Pulse</dt>
+            <dd>Tap clears nearby shards</dd>
+          </div>
+          <div>
+            <dt>Restart</dt>
+            <dd>Enter after a wipeout</dd>
+          </div>
+        </dl>
+        <section class="shop" aria-label="Coin shop">
+          <div class="shop-head">
+            <p class="eyebrow">Coin shop</p>
+            <strong>Lvl <span id="levelPanel">1</span> - <span id="bankPanel">0</span> coins</strong>
+          </div>
+          <div>
+            <div class="shop-title">
+              <h3>Worlds</h3>
+              <small id="worldCount">0 shown</small>
+            </div>
+            <div id="worldShop" class="shop-grid"></div>
+            <div class="shop-pager">
+              <button id="worldPrev" type="button">Prev</button>
+              <span id="worldPage">1 / 1</span>
+              <button id="worldNext" type="button">Next</button>
+            </div>
+          </div>
+          <div>
+            <div class="shop-title">
+              <h3>Skins</h3>
+              <small id="skinCount">0 shown</small>
+            </div>
+            <div id="skinShop" class="shop-grid"></div>
+            <div class="shop-pager">
+              <button id="skinPrev" type="button">Prev</button>
+              <span id="skinPage">1 / 1</span>
+              <button id="skinNext" type="button">Next</button>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
