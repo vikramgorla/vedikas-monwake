@@ -339,20 +339,20 @@ dd {
   }
 
   .shell {
-    gap: 10px;
+    gap: 12px;
   }
 
   .game-wrap {
-    aspect-ratio: 10 / 16;
+    aspect-ratio: 4 / 5;
     border-radius: 8px;
     min-height: 0;
-    max-height: 82dvh;
+    max-height: 68dvh;
     width: 100%;
   }
 
   .hud {
-    gap: 5px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     left: 8px;
     right: 8px;
     top: 8px;
@@ -360,19 +360,19 @@ dd {
 
   .hud div {
     border-radius: 7px;
-    padding: 6px 7px;
+    padding: 5px 6px;
   }
 
   .hud span {
-    font-size: 0.56rem;
-    letter-spacing: 0.08em;
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .hud strong {
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     margin-top: 1px;
   }
 
@@ -395,13 +395,13 @@ dd {
   }
 
   .panel {
-    gap: 14px;
-    padding: 14px;
+    gap: 12px;
+    padding: 12px;
   }
 
   .panel h2 {
-    font-size: 1.6rem;
-    margin: 8px 0 10px;
+    font-size: 1.35rem;
+    margin: 6px 0 0;
   }
 
   .panel p {
@@ -409,9 +409,14 @@ dd {
     line-height: 1.45;
   }
 
+  .panel > div:first-child > p:not(.eyebrow),
+  .stats div:nth-child(3) {
+    display: none;
+  }
+
   .stats {
     gap: 8px;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .stats div {
@@ -423,7 +428,7 @@ dd {
   }
 
   .shop {
-    gap: 12px;
+    gap: 10px;
   }
 
   .shop-head {
@@ -437,35 +442,35 @@ dd {
   }
 
   .shop-grid {
-    gap: 7px;
-    max-height: 310px;
+    gap: 6px;
+    max-height: 220px;
     overflow: auto;
     padding-right: 2px;
   }
 
   .shop-item {
-    grid-template-columns: 24px minmax(0, 1fr) 64px;
-    padding: 7px;
+    grid-template-columns: 22px minmax(0, 1fr) 58px;
+    padding: 6px;
   }
 
   .swatch {
-    height: 24px;
-    width: 24px;
+    height: 22px;
+    width: 22px;
   }
 
   .shop-item b {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 
   .shop-item small {
-    font-size: 0.68rem;
+    font-size: 0.64rem;
   }
 
   .shop-item button,
   .shop-pager button {
-    font-size: 0.68rem;
-    min-height: 40px;
-    padding: 7px;
+    font-size: 0.64rem;
+    min-height: 38px;
+    padding: 6px;
   }
 
   .shop-pager {
