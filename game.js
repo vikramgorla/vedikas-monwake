@@ -27,6 +27,7 @@ const pageSize = 6;
 const worldItems = buildCatalog("world");
 const skinItems = buildCatalog("skin");
 const shopPages = { worlds: 0, skins: 0 };
+const view = { scale: 1, offsetX: 0, offsetY: 0, ratio: 1 };
 let pointerTarget = null;
 let lastTime = 0;
 let profile = loadProfile();
@@ -128,7 +129,11 @@ function resize() {
   const ratio = window.devicePixelRatio || 1;
   canvas.width = Math.round(rect.width * ratio);
   canvas.height = Math.round(rect.height * ratio);
-  ctx.setTransform(canvas.width / world.width, 0, 0, canvas.height / world.height, 0, 0);
+  view.ratio = ratio;
+  view.scale = Math.max(canvas.width / world.width, canvas.height / world.height);
+  view.offsetX = (canvas.width - world.width * view.scale) / 2;
+  view.offsetY = (canvas.height - world.height * view.scale) / 2;
+  ctx.setTransform(view.scale, 0, 0, view.scale, view.offsetX, view.offsetY);
 }
 
 function startGame() {
@@ -1118,9 +1123,11 @@ function distance(a, b) {
 
 function pointerPosition(event) {
   const rect = canvas.getBoundingClientRect();
+  const x = (event.clientX - rect.left) * view.ratio;
+  const y = (event.clientY - rect.top) * view.ratio;
   return {
-    x: ((event.clientX - rect.left) / rect.width) * world.width,
-    y: ((event.clientY - rect.top) / rect.height) * world.height,
+    x: clamp((x - view.offsetX) / view.scale, 0, world.width),
+    y: clamp((y - view.offsetY) / view.scale, 0, world.height),
   };
 }
 
