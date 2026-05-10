@@ -1,16 +1,17 @@
 # Vedika's Moonwake
 
-A mobile-friendly arcade game about guiding a comet through a neon tide, catching moon pearls, dodging static shards, earning coins, and unlocking worlds and character skins.
+A mobile-friendly mini game collection. It currently includes Moonwake, a comet-and-coins arcade game, plus Capybara Run, a tap-to-jump obstacle runner.
 
 Play it here: https://vikramgorla.github.io/vedikas-monwake/
 
 ## How to Play
 
-- Move with touch, drag, trackpad, or mouse.
-- Tap or click to pulse and clear nearby shards.
-- Catch pearls to score points and build combo.
-- Earn coins from points: 1000 points = 0.5 coins.
-- Spend saved coins in the shop on worlds and skins.
+- Pick a game with the buttons above the canvas.
+- In Moonwake, move with touch, drag, trackpad, or mouse.
+- In Moonwake, tap or click to pulse and clear nearby shards.
+- In Capybara Run, tap to jump over obstacles.
+- Earn Moonwake coins from points: 1000 points = 0.5 coins.
+- Spend saved Moonwake coins in the shop on worlds and skins.
 
 ## Features
 
@@ -19,6 +20,7 @@ Play it here: https://vikramgorla.github.io/vedikas-monwake/
 - Collectible skins, including Panda Pop, Boba Tea, Tiny UFO, Strawberry, Glow Slime, Royal Crown, Honey Bee, Pocket Dragon, and many generated variants.
 - Level-based shop catalog that starts small and grows up to 1000 options.
 - Responsive layout for desktop and mobile.
+- Capybara obstacle runner with best score saved locally.
 
 ## Publishing
 

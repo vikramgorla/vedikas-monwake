@@ -70,6 +70,31 @@ button {
   width: 100%;
 }
 
+.game-tabs {
+  display: flex;
+  gap: 8px;
+  left: 14px;
+  position: absolute;
+  top: 82px;
+  z-index: 3;
+}
+
+.game-tab {
+  background: rgba(4, 12, 15, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.game-tab.active {
+  background: var(--accent);
+  color: #23140c;
+}
+
 .hud {
   display: grid;
   gap: 8px;
@@ -193,6 +218,10 @@ dd {
 .shop {
   display: grid;
   gap: 16px;
+}
+
+.shop.hidden {
+  display: none;
 }
 
 .shop-head {
@@ -356,6 +385,20 @@ dd {
     left: 8px;
     right: 8px;
     top: 8px;
+  }
+
+  .game-tabs {
+    gap: 5px;
+    left: 8px;
+    right: 8px;
+    top: 74px;
+  }
+
+  .game-tab {
+    flex: 1;
+    font-size: 0.67rem;
+    min-height: 34px;
+    padding: 6px;
   }
 
   .hud div {

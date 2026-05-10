@@ -10,29 +10,33 @@
     <main class="shell">
       <section class="game-wrap" aria-label="Moonwake arcade game">
         <canvas id="game" width="960" height="640"></canvas>
+        <div class="game-tabs" aria-label="Choose game">
+          <button class="game-tab active" type="button" data-game="moonwake">Moonwake</button>
+          <button class="game-tab" type="button" data-game="capybara">Capybara Run</button>
+        </div>
         <div class="hud" aria-hidden="true">
           <div>
-            <span>Score</span>
+            <span id="scoreLabel">Score</span>
             <strong id="score">0</strong>
           </div>
           <div>
-            <span>Run Coins</span>
+            <span id="coinsLabel">Run Coins</span>
             <strong id="coins">0</strong>
           </div>
           <div>
-            <span>Total Coins</span>
+            <span id="bankLabel">Total Coins</span>
             <strong id="bank">0</strong>
           </div>
           <div>
-            <span>Level</span>
+            <span id="levelLabel">Level</span>
             <strong id="level">1</strong>
           </div>
           <div>
-            <span>Combo</span>
+            <span id="comboLabel">Combo</span>
             <strong id="combo">x1</strong>
           </div>
           <div>
-            <span>Focus</span>
+            <span id="focusLabel">Focus</span>
             <strong id="focus">100%</strong>
           </div>
         </div>
@@ -45,9 +49,9 @@
 
       <aside class="panel" aria-label="Game controls and status">
         <div>
-          <p class="eyebrow">Arcade reset</p>
-          <h2>Keep the comet awake.</h2>
-          <p>
+          <p id="panelEyebrow" class="eyebrow">Arcade reset</p>
+          <h2 id="panelTitle">Keep the comet awake.</h2>
+          <p id="panelCopy">
             Move fast, chain pearl catches, and grab tide crystals before the
             current fades.
           </p>

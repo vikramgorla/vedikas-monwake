@@ -1,5 +1,11 @@
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
+const scoreLabelEl = document.querySelector("#scoreLabel");
+const coinsLabelEl = document.querySelector("#coinsLabel");
+const bankLabelEl = document.querySelector("#bankLabel");
+const levelLabelEl = document.querySelector("#levelLabel");
+const comboLabelEl = document.querySelector("#comboLabel");
+const focusLabelEl = document.querySelector("#focusLabel");
 const scoreEl = document.querySelector("#score");
 const coinsEl = document.querySelector("#coins");
 const bankEl = document.querySelector("#bank");
@@ -10,6 +16,11 @@ const comboEl = document.querySelector("#combo");
 const focusEl = document.querySelector("#focus");
 const overlay = document.querySelector("#overlay");
 const startButton = document.querySelector("#startButton");
+const gameTabButtons = document.querySelectorAll(".game-tab");
+const panelEyebrowEl = document.querySelector("#panelEyebrow");
+const panelTitleEl = document.querySelector("#panelTitle");
+const panelCopyEl = document.querySelector("#panelCopy");
+const shopEl = document.querySelector(".shop");
 const worldShopEl = document.querySelector("#worldShop");
 const skinShopEl = document.querySelector("#skinShop");
 const worldCountEl = document.querySelector("#worldCount");
@@ -31,7 +42,9 @@ const view = { scale: 1, offsetX: 0, offsetY: 0, ratio: 1 };
 let pointerTarget = null;
 let lastTime = 0;
 let profile = loadProfile();
+let activeGame = "moonwake";
 let state = makeState();
+let capyState = makeCapyState();
 
 function buildCatalog(type) {
   const base =
@@ -124,6 +137,28 @@ function makeState() {
   };
 }
 
+function makeCapyState() {
+  return {
+    running: false,
+    over: false,
+    score: 0,
+    best: Number(localStorage.getItem("capybara-best") || 0),
+    speed: 360,
+    obstacleTimer: 1.15,
+    cloudOffset: 0,
+    capy: {
+      x: 185,
+      y: 462,
+      vy: 0,
+      r: 34,
+      grounded: true,
+      ducking: false,
+    },
+    obstacles: [],
+    splashes: [],
+  };
+}
+
 function resize() {
   const rect = canvas.getBoundingClientRect();
   const ratio = window.devicePixelRatio || 1;
@@ -137,11 +172,22 @@ function resize() {
 }
 
 function startGame() {
+  if (activeGame === "capybara") {
+    startCapybara();
+    return;
+  }
   profile = loadProfile();
   state = makeState();
   state.running = true;
   overlay.classList.add("hidden");
   renderShop();
+  lastTime = performance.now();
+}
+
+function startCapybara() {
+  capyState = makeCapyState();
+  capyState.running = true;
+  overlay.classList.add("hidden");
   lastTime = performance.now();
 }
 
@@ -218,6 +264,10 @@ function burst(x, y, color, count = 14) {
 }
 
 function update(dt) {
+  if (activeGame === "capybara") {
+    updateCapybara(dt);
+    return;
+  }
   if (!state.running) return;
 
   state.wave += dt;
@@ -257,6 +307,103 @@ function update(dt) {
     state.focus = 0;
     endGame();
   }
+}
+
+function updateCapybara(dt) {
+  if (!capyState.running) return;
+  const capy = capyState.capy;
+  capyState.score += dt * 72;
+  capyState.speed = Math.min(720, capyState.speed + dt * 9);
+  capyState.cloudOffset = (capyState.cloudOffset + dt * 26) % world.width;
+  capyState.obstacleTimer -= dt;
+
+  if (capyState.obstacleTimer <= 0) {
+    spawnCapyObstacle();
+    capyState.obstacleTimer = Math.max(0.62, 1.35 - capyState.score / 1900) + Math.random() * 0.55;
+  }
+
+  capy.vy += 1850 * dt;
+  capy.y += capy.vy * dt;
+  if (capy.y >= 462) {
+    capy.y = 462;
+    capy.vy = 0;
+    capy.grounded = true;
+  }
+
+  for (const obstacle of capyState.obstacles) {
+    obstacle.x -= capyState.speed * dt;
+    obstacle.wobble += dt * 5;
+  }
+  capyState.obstacles = capyState.obstacles.filter((obstacle) => obstacle.x > -90);
+
+  for (const splash of capyState.splashes) {
+    splash.x += splash.vx * dt;
+    splash.y += splash.vy * dt;
+    splash.life -= dt;
+  }
+  capyState.splashes = capyState.splashes.filter((splash) => splash.life > 0);
+
+  for (const obstacle of capyState.obstacles) {
+    if (capyHitsObstacle(capy, obstacle)) {
+      endCapybara();
+      break;
+    }
+  }
+}
+
+function spawnCapyObstacle() {
+  const kind = ["cactus", "log", "rock", "bird"][Math.floor(Math.random() * 4)];
+  const sizes = {
+    cactus: { w: 38, h: 82, y: 453 },
+    log: { w: 76, h: 34, y: 487 },
+    rock: { w: 52, h: 44, y: 480 },
+    bird: { w: 58, h: 34, y: 330 + Math.random() * 58 },
+  };
+  capyState.obstacles.push({ x: world.width + 70, wobble: 0, kind, ...sizes[kind] });
+}
+
+function capyJump() {
+  if (activeGame !== "capybara") return;
+  if (!capyState.running) {
+    startCapybara();
+    return;
+  }
+  const capy = capyState.capy;
+  if (capy.grounded) {
+    capy.vy = -760;
+    capy.grounded = false;
+    for (let i = 0; i < 10; i += 1) {
+      capyState.splashes.push({
+        x: capy.x - 25 + Math.random() * 50,
+        y: 506,
+        vx: -60 + Math.random() * 120,
+        vy: -90 - Math.random() * 90,
+        life: 0.35 + Math.random() * 0.25,
+      });
+    }
+  }
+}
+
+function capyHitsObstacle(capy, obstacle) {
+  const capyBox = { x: capy.x - 42, y: capy.y - 42, w: 86, h: 58 };
+  const obstacleBox = { x: obstacle.x - obstacle.w / 2, y: obstacle.y - obstacle.h, w: obstacle.w, h: obstacle.h };
+  return (
+    capyBox.x < obstacleBox.x + obstacleBox.w &&
+    capyBox.x + capyBox.w > obstacleBox.x &&
+    capyBox.y < obstacleBox.y + obstacleBox.h &&
+    capyBox.y + capyBox.h > obstacleBox.y
+  );
+}
+
+function endCapybara() {
+  capyState.running = false;
+  capyState.over = true;
+  capyState.best = Math.max(capyState.best, Math.round(capyState.score));
+  localStorage.setItem("capybara-best", String(capyState.best));
+  overlay.classList.remove("hidden");
+  overlay.querySelector("h1").textContent = "Capybara Napped";
+  overlay.querySelector("p").textContent = `Score: ${Math.round(capyState.score)}. Best: ${capyState.best}. Tap again for another run.`;
+  startButton.textContent = "Again";
 }
 
 function movePlayer(dt) {
@@ -367,6 +514,10 @@ function pulse() {
 }
 
 function draw() {
+  if (activeGame === "capybara") {
+    drawCapybara();
+    return;
+  }
   ctx.save();
   if (state.shake > 0) {
     ctx.translate((Math.random() - 0.5) * state.shake, (Math.random() - 0.5) * state.shake);
@@ -389,6 +540,125 @@ function draw() {
   levelPanelEl.textContent = getLevel();
   comboEl.textContent = `x${state.combo}`;
   focusEl.textContent = `${Math.round(state.focus)}%`;
+}
+
+function drawCapybara() {
+  ctx.save();
+  drawCapyBackground();
+  for (const splash of capyState.splashes) {
+    ctx.globalAlpha = Math.max(0, splash.life / 0.6);
+    drawCircle("#bff7ff", 4, splash.x, splash.y);
+    ctx.globalAlpha = 1;
+  }
+  for (const obstacle of capyState.obstacles) drawCapyObstacle(obstacle);
+  drawCapy(capyState.capy);
+  ctx.restore();
+
+  scoreEl.textContent = Math.round(capyState.score).toLocaleString();
+  coinsEl.textContent = "Jump";
+  bankEl.textContent = capyState.best.toLocaleString();
+  levelEl.textContent = Math.max(1, Math.floor(capyState.score / 500) + 1);
+  comboEl.textContent = `${Math.round(capyState.speed)}`;
+  focusEl.textContent = capyState.running ? "Go" : "Ready";
+}
+
+function drawCapyBackground() {
+  const sky = ctx.createLinearGradient(0, 0, 0, world.height);
+  sky.addColorStop(0, "#82d7ff");
+  sky.addColorStop(0.58, "#f9d99a");
+  sky.addColorStop(1, "#6bbf73");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, world.width, world.height);
+
+  ctx.fillStyle = "rgba(255,255,255,0.65)";
+  for (let i = 0; i < 7; i += 1) {
+    const x = ((i * 180 - capyState.cloudOffset) % (world.width + 180)) - 90;
+    ctx.beginPath();
+    ctx.ellipse(x, 92 + (i % 3) * 30, 52, 18, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 38, 86 + (i % 2) * 18, 38, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = "#58a65e";
+  ctx.fillRect(0, 505, world.width, 135);
+  ctx.fillStyle = "#3c8c54";
+  for (let x = -40; x < world.width + 80; x += 70) {
+    ctx.beginPath();
+    ctx.ellipse(x - (capyState.cloudOffset * 2) % 70, 510, 34, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#4cc1d9";
+  ctx.fillRect(0, 532, world.width, 60);
+  ctx.fillStyle = "rgba(255,255,255,0.3)";
+  for (let x = 0; x < world.width; x += 90) {
+    ctx.fillRect((x - capyState.cloudOffset * 3) % world.width, 556, 42, 4);
+  }
+}
+
+function drawCapy(capy) {
+  ctx.save();
+  ctx.translate(capy.x, capy.y);
+  ctx.rotate(Math.sin(performance.now() / 130) * (capy.grounded ? 0.04 : 0.12));
+  ctx.fillStyle = "#a66a3f";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 54, 31, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#b97846";
+  ctx.beginPath();
+  ctx.ellipse(38, -16, 29, 25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  drawCircle("#7a482d", 7, 25, -35);
+  drawCircle("#7a482d", 7, 50, -34);
+  drawCircle("#101820", 4, 49, -19);
+  drawCircle("#101820", 5, 64, -12);
+  ctx.strokeStyle = "#6e3f29";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(-28, 22);
+  ctx.lineTo(-36, 42);
+  ctx.moveTo(10, 23);
+  ctx.lineTo(6, 44);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawCapyObstacle(obstacle) {
+  ctx.save();
+  ctx.translate(obstacle.x, obstacle.y);
+  if (obstacle.kind === "cactus") {
+    ctx.fillStyle = "#247a4a";
+    roundRect(-14, -obstacle.h, 28, obstacle.h, 12);
+    ctx.fill();
+    roundRect(8, -58, 25, 18, 8);
+    ctx.fill();
+    roundRect(-32, -48, 25, 18, 8);
+    ctx.fill();
+  } else if (obstacle.kind === "log") {
+    ctx.fillStyle = "#88512f";
+    roundRect(-38, -34, 76, 34, 17);
+    ctx.fill();
+    ctx.strokeStyle = "#5d321f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(24, -17, 10, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (obstacle.kind === "rock") {
+    ctx.fillStyle = "#6c7380";
+    ctx.beginPath();
+    ctx.moveTo(-28, 0);
+    ctx.lineTo(-12, -43);
+    ctx.lineTo(21, -37);
+    ctx.lineTo(31, 0);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "#f4f0d8";
+    ctx.beginPath();
+    ctx.ellipse(0, -18 + Math.sin(obstacle.wobble) * 8, 30, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    drawCircle("#101820", 3, 15, -21 + Math.sin(obstacle.wobble) * 8);
+  }
+  ctx.restore();
 }
 
 function getRunCoins(score) {
@@ -518,6 +788,48 @@ function renderShopGroup(container, items, type, selectedId) {
       return row;
     }),
   );
+}
+
+function switchGame(game) {
+  activeGame = game;
+  pointerTarget = null;
+  overlay.classList.remove("hidden");
+  startButton.textContent = "Start";
+  for (const button of gameTabButtons) {
+    button.classList.toggle("active", button.dataset.game === game);
+  }
+
+  if (game === "capybara") {
+    capyState.running = false;
+    scoreLabelEl.textContent = "Score";
+    coinsLabelEl.textContent = "Move";
+    bankLabelEl.textContent = "Best";
+    levelLabelEl.textContent = "Level";
+    comboLabelEl.textContent = "Speed";
+    focusLabelEl.textContent = "State";
+    overlay.querySelector("h1").textContent = "Capybara Run";
+    overlay.querySelector("p").textContent = "Tap to hop over logs, rocks, birds, and suspiciously rude cacti.";
+    panelEyebrowEl.textContent = "Obstacle sprint";
+    panelTitleEl.textContent = "Keep the capybara cruising.";
+    panelCopyEl.textContent = "Tap to jump, time the obstacles, and chase a new best score.";
+    shopEl.classList.add("hidden");
+  } else {
+    state.running = false;
+    scoreLabelEl.textContent = "Score";
+    coinsLabelEl.textContent = "Run Coins";
+    bankLabelEl.textContent = "Total Coins";
+    levelLabelEl.textContent = "Level";
+    comboLabelEl.textContent = "Combo";
+    focusLabelEl.textContent = "Focus";
+    overlay.querySelector("h1").textContent = "Moonwake";
+    overlay.querySelector("p").textContent = "Catch moon pearls, dodge static shards, and ride the neon tide.";
+    panelEyebrowEl.textContent = "Arcade reset";
+    panelTitleEl.textContent = "Keep the comet awake.";
+    panelCopyEl.textContent = "Move fast, chain pearl catches, and grab tide crystals before the current fades.";
+    shopEl.classList.remove("hidden");
+    renderShop();
+  }
+  draw();
 }
 
 function drawBackground() {
@@ -1144,26 +1456,37 @@ window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
   if (key === " ") {
     event.preventDefault();
-    pulse();
+    if (activeGame === "capybara") capyJump();
+    else pulse();
   }
-  if (key === "enter" && !state.running) startGame();
+  if (key === "enter" && ((activeGame === "moonwake" && !state.running) || (activeGame === "capybara" && !capyState.running))) {
+    startGame();
+  }
 });
 canvas.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  pointerTarget = pointerPosition(event);
-  pulse();
+  if (activeGame === "capybara") {
+    capyJump();
+  } else {
+    pointerTarget = pointerPosition(event);
+    pulse();
+  }
   canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener("pointermove", (event) => {
   event.preventDefault();
-  pointerTarget = pointerPosition(event);
+  if (activeGame === "moonwake") pointerTarget = pointerPosition(event);
 });
 canvas.addEventListener("pointerleave", () => {
   if (!state.running) pointerTarget = null;
 });
 startButton.addEventListener("click", startGame);
+for (const button of gameTabButtons) {
+  button.addEventListener("click", () => switchGame(button.dataset.game));
+}
 
 resize();
 renderShop();
+switchGame("moonwake");
 draw();
 requestAnimationFrame(frame);
