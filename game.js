@@ -1692,8 +1692,19 @@ function distance(a, b) {
 
 function pointerPosition(event) {
   const rect = canvas.getBoundingClientRect();
-  const x = (event.clientX - rect.left) * view.ratio;
-  const y = (event.clientY - rect.top) * view.ratio;
+  let clientX, clientY;
+  
+  // Handle both mouse and touch events
+  if (event.touches && event.touches.length > 0) {
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else {
+    clientX = event.clientX;
+    clientY = event.clientY;
+  }
+  
+  const x = (clientX - rect.left) * view.ratio;
+  const y = (clientY - rect.top) * view.ratio;
   return {
     x: clamp((x - view.offsetX) / view.scale, 0, world.width),
     y: clamp((y - view.offsetY) / view.scale, 0, world.height),
@@ -1781,24 +1792,15 @@ canvas.addEventListener("pointerdown", (event) => {
     capyJump();
   }
   
-  // Set pointerTarget on initial press so player moves toward tap
-  pointerTarget = pointerPosition(event);
-  
   canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener("pointermove", (event) => {
   event.preventDefault();
   if (activeGame !== "moonwake") return;
   
-  const rect = canvas.getBoundingClientRect();
-  const currentX = event.clientX - rect.left;
-  const currentY = event.clientY - rect.top;
-  const dist = Math.hypot(currentX - pointerStartX, currentY - pointerStartY);
-  
-  hasMoved = true;
-  
-  // Moonwake follows mouse/finger during drag, always using proper coordinate conversion
+  // Moonwake follows the pointer position anywhere it moves
   pointerTarget = pointerPosition(event);
+  hasMoved = true;
 });
 canvas.addEventListener("pointerup", (event) => {
   // Pulse on tap only (not when dragging)
