@@ -396,9 +396,10 @@ dd {
 
   .game-tab {
     flex: 1;
-    font-size: 0.67rem;
-    min-height: 34px;
-    padding: 6px;
+    font-size: 0.8rem;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-width: 2px;
   }
 
   .hud div {
@@ -433,8 +434,10 @@ dd {
   }
 
   .overlay button {
-    min-width: 116px;
-    padding: 12px 18px;
+    min-width: 120px;
+    min-height: 48px;
+    padding: 14px 20px;
+    font-size: 1.1rem;
   }
 
   .panel {

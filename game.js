@@ -39,6 +39,7 @@ const worldItems = buildCatalog("world");
 const skinItems = buildCatalog("skin");
 const shopPages = { worlds: 0, skins: 0 };
 const view = { scale: 1, offsetX: 0, offsetY: 0, ratio: 1 };
+const touchState = { startX: 0, startY: 0, startTime: 0, isTouching: false };
 let pointerTarget = null;
 let lastTime = 0;
 let profile = loadProfile();
@@ -384,8 +385,18 @@ function capyJump() {
   }
 }
 
+function capyDuck(active) {
+  if (activeGame !== "capybara") return;
+  capyState.capy.ducking = active;
+}
+
 function capyHitsObstacle(capy, obstacle) {
-  const capyBox = { x: capy.x - 42, y: capy.y - 42, w: 86, h: 58 };
+  let capyBox;
+  if (capy.ducking && capy.grounded) {
+    capyBox = { x: capy.x - 42, y: capy.y - 22, w: 86, h: 38 };
+  } else {
+    capyBox = { x: capy.x - 42, y: capy.y - 42, w: 86, h: 58 };
+  }
   const obstacleBox = { x: obstacle.x - obstacle.w / 2, y: obstacle.y - obstacle.h, w: obstacle.w, h: obstacle.h };
   return (
     capyBox.x < obstacleBox.x + obstacleBox.w &&
@@ -598,28 +609,260 @@ function drawCapyBackground() {
 function drawCapy(capy) {
   ctx.save();
   ctx.translate(capy.x, capy.y);
-  ctx.rotate(Math.sin(performance.now() / 130) * (capy.grounded ? 0.04 : 0.12));
-  ctx.fillStyle = "#a66a3f";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 54, 31, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#b97846";
-  ctx.beginPath();
-  ctx.ellipse(38, -16, 29, 25, 0, 0, Math.PI * 2);
-  ctx.fill();
-  drawCircle("#7a482d", 7, 25, -35);
-  drawCircle("#7a482d", 7, 50, -34);
-  drawCircle("#101820", 4, 49, -19);
-  drawCircle("#101820", 5, 64, -12);
-  ctx.strokeStyle = "#6e3f29";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.moveTo(-28, 22);
-  ctx.lineTo(-36, 42);
-  ctx.moveTo(10, 23);
-  ctx.lineTo(6, 44);
-  ctx.stroke();
+  ctx.rotate(Math.sin(performance.now() / 130) * (capy.grounded ? 0.02 : 0.08));
+  
+  const time = performance.now();
+  const isDucking = capy.ducking && capy.grounded;
+  
+  if (isDucking) {
+    ctx.scale(1, 0.75);
+    ctx.translate(0, 10);
+  }
+  
+  drawCapyShadow(capy, isDucking);
+  drawCapyLegs(capy, time, isDucking);
+  drawCapyBody(capy, time, isDucking);
+  drawCapyHead(capy, time, isDucking);
+  drawCapyFace(capy, time, isDucking);
+  
   ctx.restore();
+}
+
+function drawCapyShadow(capy, isDucking) {
+  const scale = isDucking ? 1.1 : 1;
+  const shadowScale = capy.grounded ? 1 : Math.max(0.3, 1 - (462 - capy.y) / 200) * scale;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  ctx.beginPath();
+  ctx.ellipse(0, 40, 40 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCapyLegs(capy, time, isDucking) {
+  ctx.save();
+  
+  const legOffset = Math.sin(time / 130) * 6;
+  const baseH = isDucking ? 12 : 18;
+  const positions = capy.grounded 
+    ? [-22 + legOffset, -8 - legOffset, 8 - legOffset, 20 + legOffset]
+    : [-16, -16, 13, 13];
+  
+  for (let i = 0; i < 4; i++) {
+    const x = positions[i];
+    const legH = baseH;
+    
+    ctx.fillStyle = i % 2 === 0 ? "#8B6F47" : "#7A5F3A";
+    ctx.strokeStyle = "#4A3728";
+    ctx.lineWidth = 2;
+    
+    ctx.beginPath();
+    ctx.roundRect(x - 4, 18, 8, legH, 3);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = "#5A4738";
+    ctx.beginPath();
+    ctx.roundRect(x - 5, 34, 10, 5, 2);
+    ctx.fill();
+    
+    ctx.strokeStyle = "#3A2A1F";
+    ctx.lineWidth = 1;
+    const toes = i < 2 ? 3 : 4;
+    for (let t = 0; t < toes; t++) {
+      const tx = x - 3 + t * 3;
+      ctx.beginPath();
+      ctx.moveTo(tx, 36);
+      ctx.lineTo(tx, 40);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawCapyBody(capy, time, isDucking) {
+  const bodyWidth = 52;
+  const bodyHeight = isDucking ? 22 : 28;
+  
+  const gradient = ctx.createLinearGradient(0, -bodyHeight, 0, bodyHeight);
+  gradient.addColorStop(0, "#C49A6C");
+  gradient.addColorStop(0.5, "#A67C52");
+  gradient.addColorStop(1, "#8B6F47");
+  
+  ctx.fillStyle = gradient;
+  ctx.strokeStyle = "#4A3728";
+  ctx.lineWidth = 2;
+  
+  ctx.beginPath();
+  ctx.roundRect(-bodyWidth, -bodyHeight/2 - 4, bodyWidth * 2, bodyHeight + 8, 14);
+  ctx.fill();
+  ctx.stroke();
+  
+  ctx.strokeStyle = "#8B6F47";
+  ctx.lineWidth = 1.5;
+  const furLines = 8;
+  for (let i = 0; i < furLines; i++) {
+    const x = -bodyWidth + 12 + i * ((bodyWidth * 2 - 24) / (furLines - 1));
+    const sway = Math.sin(time / 300 + i) * 1;
+    ctx.beginPath();
+    ctx.moveTo(x, -bodyHeight/2);
+    ctx.lineTo(x + sway, -bodyHeight/2 + 10);
+    ctx.stroke();
+  }
+}
+
+function drawCapyHead(capy, time, isDucking) {
+  const headX = 48;
+  const headY = isDucking ? -18 : -22;
+  const headWidth = 36;
+  const headHeight = isDucking ? 24 : 28;
+  
+  const gradient = ctx.createLinearGradient(headX - headWidth, headY - headHeight, headX + headWidth, headY + headHeight);
+  gradient.addColorStop(0, "#C49A6C");
+  gradient.addColorStop(0.5, "#A67C52");
+  gradient.addColorStop(1, "#8B6F47");
+  
+  ctx.fillStyle = gradient;
+  ctx.strokeStyle = "#4A3728";
+  ctx.lineWidth = 2;
+  
+  ctx.beginPath();
+  ctx.roundRect(headX - headWidth, headY - headHeight, headWidth * 2, headHeight * 2, 10);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawCapyFace(capy, time, isDucking) {
+  const headX = 48;
+  const headY = isDucking ? -18 : -22;
+  
+  const blink = Math.sin(time / 4000) > 0.97;
+  
+  drawCapyEars(headX, headY);
+  drawCapyEyes(headX, headY, blink);
+  drawCapySnout(headX, headY, time);
+  drawCapyNose(headX, headY, time);
+  drawCapyWhiskers(headX, headY, time);
+}
+
+function drawCapyEars(headX, headY) {
+  ctx.fillStyle = "#8B6F47";
+  ctx.strokeStyle = "#4A3728";
+  ctx.lineWidth = 1.5;
+  
+  for (let side = -1; side <= 1; side += 2) {
+    ctx.save();
+    ctx.translate(headX + side * 14, headY - 24);
+    ctx.rotate(side * 0.1);
+    
+    ctx.beginPath();
+    ctx.roundRect(-5, -8, 10, 12, 3);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = "#A67C52";
+    ctx.beginPath();
+    ctx.roundRect(-3, -5, 6, 7, 2);
+    ctx.fill();
+    
+    ctx.restore();
+  }
+}
+
+function drawCapyEyes(headX, headY, blink) {
+  const eyeY = headY - 8;
+  
+  for (let side = -1; side <= 1; side += 2) {
+    const eyeX = headX + side * 10;
+    
+    if (blink) {
+      ctx.strokeStyle = "#4A3728";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(eyeX - 4, eyeY);
+      ctx.lineTo(eyeX + 4, eyeY);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = "#2D1F14";
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, 4, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.beginPath();
+      ctx.arc(eyeX + 1.5, eyeY - 1, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawCapySnout(headX, headY, time) {
+  ctx.fillStyle = "#B89068";
+  ctx.strokeStyle = "#4A3728";
+  ctx.lineWidth = 2;
+  
+  const twitch = Math.sin(time / 200) * 0.5;
+  
+  ctx.beginPath();
+  ctx.roundRect(headX + 24, headY - 12 + twitch, 28, 20, 8);
+  ctx.fill();
+  ctx.stroke();
+  
+  ctx.fillStyle = "#A67C52";
+  ctx.beginPath();
+  ctx.roundRect(headX + 26, headY - 8 + twitch, 22, 12, 6);
+  ctx.fill();
+  
+  ctx.strokeStyle = "#8B6F47";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(headX + 36, headY - 4 + twitch);
+  ctx.lineTo(headX + 36, headY + 8 + twitch);
+  ctx.stroke();
+}
+
+function drawCapyNose(headX, headY, time) {
+  const twitch = Math.sin(time / 200) * 0.5;
+  
+  ctx.fillStyle = "#3D2817";
+  ctx.beginPath();
+  ctx.ellipse(headX + 50, headY - 10 + twitch, 6, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = "rgba(255,255,255,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(headX + 48, headY - 11 + twitch, 2, 1.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = "#3D2817";
+  ctx.beginPath();
+  ctx.arc(headX + 47, headY - 9 + twitch, 1.5, 0, Math.PI * 2);
+  ctx.arc(headX + 53, headY - 9 + twitch, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCapyWhiskers(headX, headY, time) {
+  ctx.strokeStyle = "#4A3728";
+  ctx.lineWidth = 1;
+  
+  const wiggle = Math.sin(time / 400) * 1.5;
+  const twitch = Math.sin(time / 200) * 0.5;
+  
+  for (let side = -1; side <= 1; side += 2) {
+    const startX = headX + 48 + side * 2;
+    const startY = headY - 4 + twitch;
+    
+    for (let i = 0; i < 4; i++) {
+      const angle = (i - 1.5) * 0.15;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY + i * 4);
+      ctx.lineTo(
+        startX + side * (14 + i * 3),
+        startY + i * 4 + Math.sin(time / 250 + i) * 1.5 + wiggle
+      );
+      ctx.stroke();
+    }
+  }
 }
 
 function drawCapyObstacle(obstacle) {
@@ -808,10 +1051,10 @@ function switchGame(game) {
     comboLabelEl.textContent = "Speed";
     focusLabelEl.textContent = "State";
     overlay.querySelector("h1").textContent = "Capybara Run";
-    overlay.querySelector("p").textContent = "Tap to hop over logs, rocks, birds, and suspiciously rude cacti.";
+    overlay.querySelector("p").textContent = "Tap to hop or swipe up. Hold bottom to duck. Swipe down to duck.";
     panelEyebrowEl.textContent = "Obstacle sprint";
     panelTitleEl.textContent = "Keep the capybara cruising.";
-    panelCopyEl.textContent = "Tap to jump, time the obstacles, and chase a new best score.";
+    panelCopyEl.textContent = "Tap or swipe up to jump. Swipe down to duck. Collect coins and dodge obstacles!";
     shopEl.classList.add("hidden");
   } else {
     state.running = false;
@@ -1443,6 +1686,52 @@ function pointerPosition(event) {
   };
 }
 
+function handleTouchStart(event) {
+  const rect = canvas.getBoundingClientRect();
+  touchState.startX = event.touches[0].clientX - rect.left;
+  touchState.startY = event.touches[0].clientY - rect.top;
+  touchState.startTime = Date.now();
+  touchState.isTouching = true;
+}
+
+function handleTouchEnd(event) {
+  if (!touchState.isTouching) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const endX = event.changedTouches[0].clientX - rect.left;
+  const endY = event.changedTouches[0].clientY - rect.top;
+  const duration = Date.now() - touchState.startTime;
+  
+  const dx = endX - touchState.startX;
+  const dy = endY - touchState.startY;
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+  
+  touchState.isTouching = false;
+  
+  if (duration > 500) return; // Ignore holds (more than 500ms)
+  if (absDx < 30 && absDy < 30) return; // Ignore taps (less than 30px movement)
+  
+  if (activeGame === "capybara") {
+    if (absDy > absDx * 1.2) { // Mostly vertical swipe
+      if (dy < 0) capyJump(); // Swipe up
+      else capyDuck(true); // Swipe down
+    }
+  }
+}
+
+function handleTouchMove(event) {
+  if (!touchState.isTouching || activeGame !== "moonwake") return;
+  const rect = canvas.getBoundingClientRect();
+  const currentX = event.touches[0].clientX - rect.left;
+  const currentY = event.touches[0].clientY - rect.top;
+  pointerTarget = pointerPosition(event);
+}
+
+function handleTouchCancel() {
+  touchState.isTouching = false;
+}
+
 function frame(time) {
   const dt = Math.min(0.033, (time - lastTime) / 1000 || 0);
   lastTime = time;
@@ -1465,9 +1754,10 @@ window.addEventListener("keydown", (event) => {
 });
 canvas.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (activeGame === "capybara") {
+  // Don't jump if it's a swipe - swipe is handled by touchend
+  if (activeGame === "capybara" && !touchState.isTouching) {
     capyJump();
-  } else {
+  } else if (activeGame !== "capybara") {
     pointerTarget = pointerPosition(event);
     pulse();
   }
@@ -1480,6 +1770,12 @@ canvas.addEventListener("pointermove", (event) => {
 canvas.addEventListener("pointerleave", () => {
   if (!state.running) pointerTarget = null;
 });
+
+// Touch swipe support for both games
+canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+canvas.addEventListener("touchcancel", handleTouchCancel, { passive: false });
 startButton.addEventListener("click", startGame);
 for (const button of gameTabButtons) {
   button.addEventListener("click", () => switchGame(button.dataset.game));
