@@ -1780,6 +1780,10 @@ canvas.addEventListener("pointerdown", (event) => {
   if (activeGame === "capybara") {
     capyJump();
   }
+  
+  // Set pointerTarget on initial press so player moves toward tap
+  pointerTarget = pointerPosition(event);
+  
   canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener("pointermove", (event) => {
@@ -1793,10 +1797,8 @@ canvas.addEventListener("pointermove", (event) => {
   
   hasMoved = true;
   
-  // Moonwake follows mouse during drag (but not on initial tap)
-  if (dist > 20) {
-    pointerTarget = { x: currentX, y: currentY };
-  }
+  // Moonwake follows mouse/finger during drag, always using proper coordinate conversion
+  pointerTarget = pointerPosition(event);
 });
 canvas.addEventListener("pointerup", (event) => {
   // Pulse on tap only (not when dragging)
@@ -1806,7 +1808,7 @@ canvas.addEventListener("pointerup", (event) => {
   hasMoved = false;
 });
 canvas.addEventListener("pointerleave", () => {
-  if (!state.running) pointerTarget = null;
+  if (state.running) pointerTarget = null;
   hasMoved = false;
 });
 
