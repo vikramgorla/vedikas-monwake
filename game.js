@@ -1752,12 +1752,22 @@ window.addEventListener("keydown", (event) => {
     startGame();
   }
 });
+// Store original position for drag detection
+let pointerStartX = 0;
+let pointerStartY = 0;
 canvas.addEventListener("pointerdown", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  pointerStartX = event.clientX - rect.left;
+  pointerStartY = event.clientY - rect.top;
   event.preventDefault();
-  // Don't jump if it's a swipe - swipe is handled by touchend
-  if (activeGame === "capybara" && !touchState.isTouching) {
-    capyJump();
-  } else if (activeGame !== "capybara") {
+  
+  if (activeGame === "capybara") {
+    // Capybara: jump on tap, duck handled by touchend swipe
+    if (!touchState.isTouching) {
+      capyJump();
+    }
+  } else {
+    // Moonwake: set target, pulse on tap (will pulse on first move too)
     pointerTarget = pointerPosition(event);
     pulse();
   }
@@ -1765,7 +1775,17 @@ canvas.addEventListener("pointerdown", (event) => {
 });
 canvas.addEventListener("pointermove", (event) => {
   event.preventDefault();
-  if (activeGame === "moonwake") pointerTarget = pointerPosition(event);
+  if (activeGame !== "moonwake") return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const currentX = event.clientX - rect.left;
+  const currentY = event.clientY - rect.top;
+  const dist = Math.hypot(currentX - pointerStartX, currentY - pointerStartY);
+  
+  // Only set pointerTarget if there's significant movement (drag)
+  if (dist > 10) {
+    pointerTarget = pointerPosition(event);
+  }
 });
 canvas.addEventListener("pointerleave", () => {
   if (!state.running) pointerTarget = null;
