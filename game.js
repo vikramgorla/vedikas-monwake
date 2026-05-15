@@ -1769,20 +1769,16 @@ window.addEventListener("keydown", (event) => {
 // Track drag start for mouse
 let pointerStartX = 0;
 let pointerStartY = 0;
-let isDragging = false;
+let hasMoved = false;
 canvas.addEventListener("pointerdown", (event) => {
   const rect = canvas.getBoundingClientRect();
   pointerStartX = event.clientX - rect.left;
   pointerStartY = event.clientY - rect.top;
-  isDragging = false;
+  hasMoved = false;
   event.preventDefault();
   
   if (activeGame === "capybara") {
     capyJump();
-  } else {
-    // Moonwake: pulse immediately on tap (not drag)
-    pointerTarget = pointerPosition(event);
-    pulse();
   }
   canvas.setPointerCapture(event.pointerId);
 });
@@ -1795,18 +1791,23 @@ canvas.addEventListener("pointermove", (event) => {
   const currentY = event.clientY - rect.top;
   const dist = Math.hypot(currentX - pointerStartX, currentY - pointerStartY);
   
-  // Only set pointerTarget when dragging significantly
-  if (dist > 15) {
-    isDragging = true;
-    pointerTarget = pointerPosition(event);
+  hasMoved = true;
+  
+  // Moonwake follows mouse during drag (but not on initial tap)
+  if (dist > 20) {
+    pointerTarget = { x: currentX, y: currentY };
   }
 });
-canvas.addEventListener("pointerup", () => {
-  isDragging = false;
+canvas.addEventListener("pointerup", (event) => {
+  // Pulse on tap only (not when dragging)
+  if (activeGame === "moonwake" && !hasMoved) {
+    pulse();
+  }
+  hasMoved = false;
 });
 canvas.addEventListener("pointerleave", () => {
   if (!state.running) pointerTarget = null;
-  isDragging = false;
+  hasMoved = false;
 });
 
 // Touch swipe support for both games
