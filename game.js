@@ -31,6 +31,20 @@ const worldPrevButton = document.querySelector("#worldPrev");
 const worldNextButton = document.querySelector("#worldNext");
 const skinPrevButton = document.querySelector("#skinPrev");
 const skinNextButton = document.querySelector("#skinNext");
+const portraitWarning = document.querySelector(".portrait-warning");
+
+// Orientation check helper
+function updateOrientation() {
+  if (portraitWarning) {
+    const isPortrait = window.innerWidth < window.innerHeight && window.innerWidth <= 768;
+    portraitWarning.style.display = isPortrait ? "flex" : "none";
+  }
+}
+
+// Update on load and on resize/orientation change
+updateOrientation();
+window.addEventListener("resize", updateOrientation);
+window.addEventListener("orientationchange", updateOrientation);
 
 const world = { width: 960, height: 640 };
 const saveKey = "moonwake-shop-v1";
@@ -1752,22 +1766,21 @@ window.addEventListener("keydown", (event) => {
     startGame();
   }
 });
-// Store original position for drag detection
+// Track drag start for mouse
 let pointerStartX = 0;
 let pointerStartY = 0;
+let isDragging = false;
 canvas.addEventListener("pointerdown", (event) => {
   const rect = canvas.getBoundingClientRect();
   pointerStartX = event.clientX - rect.left;
   pointerStartY = event.clientY - rect.top;
+  isDragging = false;
   event.preventDefault();
   
   if (activeGame === "capybara") {
-    // Capybara: jump on tap, duck handled by touchend swipe
-    if (!touchState.isTouching) {
-      capyJump();
-    }
+    capyJump();
   } else {
-    // Moonwake: set target, pulse on tap (will pulse on first move too)
+    // Moonwake: pulse immediately on tap (not drag)
     pointerTarget = pointerPosition(event);
     pulse();
   }
@@ -1782,13 +1795,18 @@ canvas.addEventListener("pointermove", (event) => {
   const currentY = event.clientY - rect.top;
   const dist = Math.hypot(currentX - pointerStartX, currentY - pointerStartY);
   
-  // Only set pointerTarget if there's significant movement (drag)
-  if (dist > 10) {
+  // Only set pointerTarget when dragging significantly
+  if (dist > 15) {
+    isDragging = true;
     pointerTarget = pointerPosition(event);
   }
 });
+canvas.addEventListener("pointerup", () => {
+  isDragging = false;
+});
 canvas.addEventListener("pointerleave", () => {
   if (!state.running) pointerTarget = null;
+  isDragging = false;
 });
 
 // Touch swipe support for both games
